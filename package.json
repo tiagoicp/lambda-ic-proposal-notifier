@@ -1,0 +1,27 @@
+{
+  "name": "lambda-ic-proposal-notifier",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.mjs",
+  "scripts": {
+    "prepare": "husky",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prettier:check": "npx prettier --check .",
+    "format": "npx prettier --write .",
+    "eslint:check": "npx eslint .",
+    "lint": "eslint --fix ."
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-ecs": "latest",
+    "@aws-sdk/client-ssm": "latest"
+  },
+  "devDependencies": {
+    "husky": "latest",
+    "prettier": "latest",
+    "@eslint/js": "latest",
+    "eslint": "latest",
+    "globals": "latest"
+  }
+}
