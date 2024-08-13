@@ -7,7 +7,11 @@ import {
 
 const CONFIG = {
   storeParameterName: "pt_hub-shared_data",
-  topicsString: "TOPIC_IC_OS_VERSION_ELECTION",
+  topics: [
+    "TOPIC_GOVERNANCE",
+    "TOPIC_NETWORK_ECONOMICS",
+    "TOPIC_SNS_AND_COMMUNITY_FUND",
+  ],
 };
 
 // eslint-disable-next-line no-unused-vars
@@ -54,10 +58,14 @@ export const handler = async (event) => {
 };
 
 async function getAcceptingVotesReplicaProposals() {
+  let topicsString = "";
+  CONFIG.topics.forEach((topic) => {
+    topicsString += "&include_topic=" + topic;
+  });
+
   const url =
-    "https://ic-api.internetcomputer.org/api/v3/proposals?include_topic=" +
-    CONFIG.topicsString +
-    "&include_reward_status=ACCEPT_VOTES";
+    "https://ic-api.internetcomputer.org/api/v3/proposals?include_reward_status=ACCEPT_VOTES" +
+    topicsString;
 
   return new Promise((resolve) => {
     https
