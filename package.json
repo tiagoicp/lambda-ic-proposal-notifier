@@ -14,8 +14,9 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@aws-sdk/client-ecs": "latest",
-    "@aws-sdk/client-ssm": "latest"
+    "@aws-sdk/client-secrets-manager": "latest",
+    "@aws-sdk/client-ssm": "latest",
+    "nodemailer": "latest"
   },
   "devDependencies": {
     "husky": "latest",

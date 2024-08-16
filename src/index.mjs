@@ -1,17 +1,26 @@
 import https from "https";
+import nodemailer from "nodemailer";
 import {
   SSMClient,
   GetParameterCommand,
   PutParameterCommand,
 } from "@aws-sdk/client-ssm";
+import {
+  SecretsManagerClient,
+  GetSecretValueCommand,
+} from "@aws-sdk/client-secrets-manager";
 
+const SANDBOX_MODE = false;
 const CONFIG = {
   storeParameterName: "pt_hub-shared_data",
+  secretName: "pt-hub/proposal-notifier-secrets",
+  awsRegion: "eu-west-1",
   topics: [
     "TOPIC_GOVERNANCE",
     "TOPIC_NETWORK_ECONOMICS",
     "TOPIC_SNS_AND_COMMUNITY_FUND",
   ],
+  notifyEmails: SANDBOX_MODE ? [""] : ["icp-hub-proposals@googlegroups.com"],
 };
 
 // eslint-disable-next-line no-unused-vars
@@ -32,24 +41,22 @@ export const handler = async (event) => {
   );
 
   // add missing proposal ids
-  if (proposalIdsToAdd.length != 0) {
-    const newProposalsArray = buildNewProposals(proposalIdsToAdd);
-    await joinAndUpdateSharedData(
-      storedData,
-      newProposalsArray,
-      activeProposalIds,
-    );
-  }
-
-  // execute task (if new or not started)
-  if (proposalIdsToAdd.length != 0 || hasProposalsNotStarted(storedData)) {
-    await notifyByEmail();
-  } else {
+  if (proposalIdsToAdd.length == 0) {
     return {
       statusCode: 200,
       body: JSON.stringify("Success: No new proposals found"),
     };
   }
+
+  // execute task
+  await notifyByEmail(proposalIdsToAdd);
+
+  const newProposalsArray = buildNewProposals(proposalIdsToAdd);
+  await joinAndUpdateSharedData(
+    storedData,
+    newProposalsArray,
+    activeProposalIds,
+  );
 
   return {
     statusCode: 200,
@@ -135,7 +142,6 @@ function buildNewProposals(proposalIds) {
   for (let proposal_id of proposalIds) {
     let newHash = {
       proposal: proposal_id,
-      started_at: "",
     };
     newProposalsArray.push(newHash);
   }
@@ -188,25 +194,83 @@ async function putParameterCommand(newStoredData) {
   return !!hasVersion;
 }
 
-function hasProposalsNotStarted(storedData) {
-  const proposalsNotStarted = storedData.filter(
-    (proposalData) => proposalData.started_at == "",
-  );
-  return proposalsNotStarted.length != 0;
+async function notifyByEmail(proposalIdsToAdd) {
+  try {
+    proposalIdsToAdd.forEach(async (proposalId) => {
+      await sendEmail(proposalId);
+    });
+
+    console.log("Emails sent to proposal(s): " + proposalIdsToAdd.join(","));
+  } catch (error) {
+    console.log(
+      "Failed to send email on proposal(s): " + proposalIdsToAdd.join(","),
+    );
+    console.log(JSON.stringify(error));
+    process.exit(1);
+  }
 }
 
-async function notifyByEmail() {
-  // TODO: send email
-  let response = "email was sent";
+async function sendEmail(proposalId) {
+  const secrets = await getRunnerSecrets();
+
+  const transport = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    auth: {
+      user: secrets.gmailUsername,
+      pass: secrets.gmailAppPassword,
+    },
+  });
+
+  const message = {
+    from: secrets.gmailUsername,
+    to: CONFIG.notifyEmails.join(","),
+    subject: `[ICP HUB] Proposal requires your vote - ${proposalId}`,
+    text: getBody(proposalId),
+  };
+
+  transport.sendMail(message, (err, info) => {
+    if (err) {
+      throw err;
+    } else {
+      console.log(info);
+    }
+  });
+}
+
+const getBody = (proposalId) => {
+  return (
+    "Hi,\n\n" +
+    `Proposal ${proposalId} requires your vote.\n` +
+    `Please see all details here: https://dashboard.internetcomputer.org/proposal/${proposalId}\n\n` +
+    "Regards,\n" +
+    "ICP HUB Bot"
+  );
+};
+
+const getRunnerSecrets = async () => {
+  const secretsString = await getSecret();
+  return JSON.parse(secretsString);
+};
+
+const getSecret = async () => {
+  // https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/getting-started.html
+  const client = new SecretsManagerClient({ region: CONFIG.awsRegion });
+
+  let response;
+
   try {
-    // response = await client.send(command);
+    response = await client.send(
+      new GetSecretValueCommand({ SecretId: CONFIG.secretName }),
+    );
   } catch (error) {
+    // https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
     console.log(JSON.stringify(error));
     process.exit(1);
   }
 
-  // always log full response
-  console.log(JSON.stringify(response));
-}
+  const secret = response.SecretString;
+  return secret;
+};
 
 console.log(await handler());
