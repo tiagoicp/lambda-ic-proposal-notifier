@@ -4,9 +4,9 @@ import { CONFIG } from "./config.js";
 
 export async function notifyByEmail(proposalIdsToAdd) {
   try {
-    proposalIdsToAdd.forEach(async (proposalId) => {
-      await sendEmail(proposalId);
-    });
+    for (let i = 0; i < proposalIdsToAdd.length; i++) {
+      await sendEmail(proposalIdsToAdd[i]);
+    }
 
     console.log("Emails sent to proposal(s): " + proposalIdsToAdd.join(","));
   } catch (error) {
@@ -37,15 +37,16 @@ async function sendEmail(proposalId) {
     text: getBody(proposalId),
   };
 
-  console.log("Time " + proposalId + " started: " + new Date().toISOString());
-  transport.sendMail(message, (err, info) => {
-    if (err) {
-      throw err;
-    } else {
-      console.log(info);
-    }
+  return new Promise((resolve) => {
+    transport.sendMail(message, (err, info) => {
+      if (err) {
+        throw err;
+      } else {
+        console.log(info);
+        resolve();
+      }
+    });
   });
-  console.log("Time " + proposalId + " ended: " + new Date().toISOString());
 }
 
 const getBody = (proposalId) => {

@@ -1,5 +1,5 @@
 import https from "https";
-import { CONFIG } from "./src/config.js";
+import { CONFIG, SANDBOX_MODE } from "./src/config.js";
 import { awsGetSharedData, awsPutParameterCommand } from "./src/awsWrapper.js";
 import { notifyByEmail } from "./src/emailNotifier.js";
 
@@ -126,7 +126,9 @@ async function joinAndUpdateSharedData(
   const newStoredData = activeProposalsArray.concat(newProposalsArray);
 
   // update
-  await awsPutParameterCommand(newStoredData);
+  if (!SANDBOX_MODE) {
+    await awsPutParameterCommand(newStoredData);
+  }
 }
 
 console.log(await handler());

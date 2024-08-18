@@ -1,4 +1,4 @@
-const SANDBOX_MODE = false;
+export const SANDBOX_MODE = false;
 export const CONFIG = {
   storeParameterName: "pt_hub-shared_data",
   secretName: "pt-hub/proposal-notifier-secrets",
