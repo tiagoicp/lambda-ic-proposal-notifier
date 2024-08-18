@@ -9,8 +9,8 @@ Clone, then do "npm install".
 
 If you want to run the lambda:
 
-- in index.mjs make sure you call `handler();`
-- then run it: `node src/index.mjs`
+- in index.mjs, in the end of the file, make sure you call `console.log(await handler());`
+- then run it: `node index.js`
 
 ## Requirements
 

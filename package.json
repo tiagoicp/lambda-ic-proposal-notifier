@@ -13,6 +13,7 @@
   },
   "author": "",
   "license": "MIT",
+  "type": "module",
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "latest",
     "@aws-sdk/client-ssm": "latest",
